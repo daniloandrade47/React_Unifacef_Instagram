@@ -1,4 +1,4 @@
-import { Alert, Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Image, RefreshControl, ScrollView, StyleSheet, Vibration, View } from 'react-native';
 import { Avatar, Button, Card, Divider, Layout, Text } from '@ui-kitten/components';
 import React, { Component, } from 'react';
 import { inject, observer } from 'mobx-react';
@@ -15,14 +15,26 @@ interface Props {
 @observer
 export default class Home extends Component<Props> {
 
-  async componentDidMount() {
+  componentDidMount() {
+    this.getPosts()
+  }
+
+  async getPosts() {
     const { getPosts } = this.props.homeStore;
-    await getPosts();
+    try {
+      await getPosts();
+    } catch (error) {
+      Vibration.vibrate(3 * 1000)
+      Alert.alert(
+        "Erro",
+        error.message
+      );
+    }
   }
 
   render() {
 
-    const { posts, photoReady, toogleStatus, addPost } = this.props.homeStore;
+    const { posts, photoReady, toogleStatus, addPost, loading } = this.props.homeStore;
 
     const uploadPhoto = (uri?: string) => {
       if (uri) {
@@ -44,7 +56,10 @@ export default class Home extends Component<Props> {
 
     return (
       <Layout style={{ flex: 1 }}>
-        <ScrollView>
+        <ScrollView
+          refreshControl={
+            <RefreshControl refreshing={loading} onRefresh={() => this.getPosts()} />
+          }>
           <Camera status={photoReady} onTakeCamera={(uri) => uploadPhoto(uri)} />
           {photoReady === false && <Button onPress={() => toogleStatus(true)}>Postar</Button>}
           {photoReady === false && posts.map((post, index) => (
